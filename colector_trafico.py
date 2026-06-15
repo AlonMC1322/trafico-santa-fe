@@ -20,12 +20,14 @@ def get_sheet():
     return gc.open_by_key(SHEET_ID).sheet1
 
 def consultar_segmento(seg):
+    # Routes API espera "latitude"/"longitude", pero los segmentos usan "lat"/"lng"
+    origen  = {"latitude": seg["origen"]["lat"],  "longitude": seg["origen"]["lng"]}
+    destino = {"latitude": seg["destino"]["lat"], "longitude": seg["destino"]["lng"]}
     payload = {
-        "origin":      {"location": {"latLng": seg["origen"]}},
-        "destination": {"location": {"latLng": seg["destino"]}},
+        "origin":      {"location": {"latLng": origen}},
+        "destination": {"location": {"latLng": destino}},
         "travelMode":  "DRIVE",
         "routingPreference": "TRAFFIC_AWARE_OPTIMAL",
-        # departureTime eliminado: por defecto usa la hora actual = tráfico en vivo
     }
     headers = {
         "Content-Type": "application/json",
