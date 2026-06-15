@@ -25,7 +25,7 @@ def consultar_segmento(seg):
         "destination": {"location": {"latLng": seg["destino"]}},
         "travelMode":  "DRIVE",
         "routingPreference": "TRAFFIC_AWARE_OPTIMAL",
-        "departureTime": datetime.now(timezone.utc).isoformat(),
+        # departureTime eliminado: por defecto usa la hora actual = tráfico en vivo
     }
     headers = {
         "Content-Type": "application/json",
@@ -33,10 +33,11 @@ def consultar_segmento(seg):
         "X-Goog-FieldMask": "routes.duration,routes.staticDuration",
     }
     r = requests.post(ROUTES_URL, json=payload, headers=headers, timeout=10)
-    r.raise_for_status()
+    if r.status_code != 200:
+        raise RuntimeError(f"{r.status_code} → {r.text}")
     ruta = r.json()["routes"][0]
-    dur_t = int(ruta["duration"].replace("s",""))
-    dur_n = int(ruta["staticDuration"].replace("s",""))
+    dur_t = int(ruta["duration"].replace("s", ""))
+    dur_n = int(ruta["staticDuration"].replace("s", ""))
     return dur_n, dur_t
 
 def muestrear():
