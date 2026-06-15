@@ -1,0 +1,29 @@
+name: Colector Tráfico Santa Fe
+
+on:
+  schedule:
+    - cron: '0,15,30,45 12-23 * * *'
+    - cron: '0,15,30,45 0-4 * * *'
+  workflow_dispatch:
+
+jobs:
+  colectar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar colector
+        env:
+          GOOGLE_MAPS_KEY:    ${{ secrets.GOOGLE_MAPS_KEY }}
+          SHEET_ID:           ${{ secrets.SHEET_ID }}
+          GSHEET_CREDENTIALS: ${{ secrets.GSHEET_CREDENTIALS }}
+        run: python colector_trafico.py
