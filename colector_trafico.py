@@ -1,4 +1,4 @@
-# colector_trafico.py  — versión mejorada con velocidades e índices de congestión
+# colector_trafico.py  — 16 columnas (sin velocidades en m/s)
 import os, time, requests, json
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -17,7 +17,6 @@ ENCABEZADOS = [
     "segmento",
     "dur_normal_s", "dur_trafico_s", "distance_m",
     "ratio", "delay_s", "congestion_index",
-    "vel_normal_ms", "vel_trafico_ms",
     "vel_normal_kmh", "vel_trafico_kmh",
     "polyline", "speed_intervals_json",
 ]
@@ -50,7 +49,6 @@ def consultar_segmento(seg):
         "destination": {"location": {"latLng": destino}},
         "travelMode":  "DRIVE",
         "routingPreference": "TRAFFIC_AWARE_OPTIMAL",
-        # Necesario para obtener speedReadingIntervals
         "extraComputations": ["TRAFFIC_ON_POLYLINE"],
     }
     headers = {
@@ -80,24 +78,15 @@ def consultar_segmento(seg):
 
 
 def calcular_variables(dur_n, dur_t, dist_m):
-    """Calcula velocidades e índices derivados de los tiempos y la distancia."""
+    """Calcula velocidades (km/h) e índices derivados de los tiempos y la distancia."""
     ratio            = round(dur_t / dur_n, 4) if dur_n > 0 else None
     delay_s          = dur_t - dur_n
     congestion_index = round(ratio - 1, 4)     if ratio is not None else None
 
-    if dist_m and dur_t > 0:
-        vel_t_ms  = round(dist_m / dur_t, 4)
-        vel_t_kmh = round(vel_t_ms * 3.6, 2)
-    else:
-        vel_t_ms = vel_t_kmh = None
+    vel_t_kmh = round((dist_m / dur_t) * 3.6, 2) if dist_m and dur_t > 0 else None
+    vel_n_kmh = round((dist_m / dur_n) * 3.6, 2) if dist_m and dur_n > 0 else None
 
-    if dist_m and dur_n > 0:
-        vel_n_ms  = round(dist_m / dur_n, 4)
-        vel_n_kmh = round(vel_n_ms * 3.6, 2)
-    else:
-        vel_n_ms = vel_n_kmh = None
-
-    return ratio, delay_s, congestion_index, vel_n_ms, vel_t_ms, vel_n_kmh, vel_t_kmh
+    return ratio, delay_s, congestion_index, vel_n_kmh, vel_t_kmh
 
 
 def muestrear():
@@ -109,11 +98,11 @@ def muestrear():
     for seg in SEGMENTOS:
         try:
             dur_n, dur_t, dist_m, polyline, speed_iv = consultar_segmento(seg)
-            ratio, delay_s, ci, vel_n_ms, vel_t_ms, vel_n_kmh, vel_t_kmh = \
+            ratio, delay_s, ci, vel_n_kmh, vel_t_kmh = \
                 calcular_variables(dur_n, dur_t, dist_m)
 
             fila = [
-                now_cdmx.isoformat(),           # timestamp_cdmx
+                now_cdmx.isoformat(),            # timestamp_cdmx
                 now_utc.isoformat(),             # timestamp_utc
                 now_cdmx.weekday(),              # dia_semana (0=lun, 6=dom)
                 now_cdmx.hour,                   # hora (CDMX)
@@ -125,8 +114,6 @@ def muestrear():
                 ratio,                           # ratio = dur_t / dur_n
                 delay_s,                         # delay_s = dur_t - dur_n
                 ci,                              # congestion_index = ratio - 1
-                vel_n_ms,                        # vel_normal_ms
-                vel_t_ms,                        # vel_trafico_ms
                 vel_n_kmh,                       # vel_normal_kmh
                 vel_t_kmh,                       # vel_trafico_kmh
                 polyline,                        # polyline encodedPolyline
