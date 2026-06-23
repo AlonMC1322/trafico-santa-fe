@@ -1,9 +1,6 @@
-name: Colector Tráfico Santa Fe
+name: Colector Tráfico Ibero
 
 on:
-  schedule:
-    - cron: '0,15,30,45 12-23 * * *'
-    - cron: '0,15,30,45 0-4 * * *'
   workflow_dispatch:
 
 jobs:
